@@ -1,6 +1,6 @@
 import os
 from telethon import TelegramClient, events
-from telethon.errors import SessionPasswordNeededError, ChatAdminRequiredError, UserAdminInvalidError
+from telethon.errors import ChatAdminRequiredError, UserAdminInvalidError, MessageDeleteForbiddenError
 
 # Load environment variables safely
 api_id = os.getenv("API_ID")
@@ -20,9 +20,13 @@ async def delete_past_system_messages(chat_id):
     async for message in client.iter_messages(chat_id):
         if message.action:  # Detects system messages (user joined, left, etc.)
             try:
-                await message.delete()
-                count += 1
-                print(f"Deleted system message: {str(message)}")
+                # Check if the message can be deleted (not all service messages can be)
+                if message.text:  # Only attempt to delete if there is a message text
+                    await message.delete()
+                    count += 1
+                    print(f"Deleted system message: {str(message)}")
+            except MessageDeleteForbiddenError:
+                print(f"Error: Unable to delete message, message deletion forbidden in chat {chat_id}")
             except ChatAdminRequiredError:
                 print(f"Error: Bot does not have permission to delete messages in chat {chat_id}")
                 break
@@ -37,9 +41,12 @@ async def delete_past_system_messages(chat_id):
 async def delete_new_system_messages(event):
     """Deletes new system messages as they appear."""
     try:
+        # Only attempt to delete new system messages
         if event.user_joined or event.user_added or event.user_left or event.user_kicked:
             await event.delete()
             print(f"✅ Deleted new system message in chat {event.chat_id}")
+    except MessageDeleteForbiddenError:
+        print(f"Error: Unable to delete new system message, deletion forbidden in chat {event.chat_id}")
     except ChatAdminRequiredError:
         print(f"Error: Bot does not have permission to delete messages in chat {event.chat_id}")
     except UserAdminInvalidError:
