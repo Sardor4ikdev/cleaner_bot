@@ -1,6 +1,6 @@
 import os
 from telethon import TelegramClient, events
-from telethon.errors import ChatAdminRequiredError, UserAdminInvalidError, MessageDeleteForbiddenError
+from telethon.errors import MessageDeleteForbiddenError, ChatAdminRequiredError, UserAdminInvalidError
 
 # Load environment variables safely
 api_id = os.getenv("API_ID")
@@ -17,10 +17,10 @@ client = TelegramClient("bot_session", api_id, api_hash).start(bot_token=bot_tok
 async def delete_past_system_messages(chat_id):
     """Deletes all system messages from the beginning of the group."""
     count = 0
-    async for message in client.iter_messages(chat_id):
+    # Set limit to None to fetch all messages
+    async for message in client.iter_messages(chat_id, limit=None):
         if message.action:  # Detects system messages (user joined, left, etc.)
             try:
-                # Check if the message can be deleted (not all service messages can be)
                 if message.text:  # Only attempt to delete if there is a message text
                     await message.delete()
                     count += 1
@@ -41,7 +41,6 @@ async def delete_past_system_messages(chat_id):
 async def delete_new_system_messages(event):
     """Deletes new system messages as they appear."""
     try:
-        # Only attempt to delete new system messages
         if event.user_joined or event.user_added or event.user_left or event.user_kicked:
             await event.delete()
             print(f"✅ Deleted new system message in chat {event.chat_id}")
