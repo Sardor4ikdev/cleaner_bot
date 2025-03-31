@@ -1,16 +1,19 @@
+import os
 from telethon import TelegramClient, events
 
-# Replace these with your actual credentials
-api_id = 22116740  # Your API ID
-api_hash = "9e98787f02048d5a7255bb22b8bf999b"  # Your API Hash
-bot_token = "7820351897:AAGz08eHTCjpUn6me3D6By-4DpKqwh6S8vg"  # Your bot token
+# Load environment variables
+api_id = int(os.getenv("API_ID"))
+api_hash = os.getenv("API_HASH")
+bot_token = os.getenv("BOT_TOKEN")
 
 client = TelegramClient("bot_session", api_id, api_hash).start(bot_token=bot_token)
 
 @client.on(events.ChatAction)
 async def delete_system_messages(event):
     if event.user_joined or event.user_added:
-        await event.delete()  # Deletes the join message
+        await event.delete()  # Deletes "User joined the group" message
+    elif event.user_left or event.user_kicked:
+        await event.delete()  # Deletes "User left the group" message
 
-print("Bot is running...")
+print("Bot is running on Railway...")
 client.run_until_disconnected()
